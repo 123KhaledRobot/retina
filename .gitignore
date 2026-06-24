@@ -1,0 +1,11 @@
+__pycache__/
+.vscode/
+
+# datasets
+*.csv
+*.zip
+*.jpeg
+sample/
+
+# state tracker
+state.md
