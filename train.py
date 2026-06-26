@@ -32,6 +32,8 @@ df = df[df["image"].isin(existing_images)].reset_index(drop=True)
 
 df.to_csv("trainLabels_clean.csv", index=False)
 
+dataset = DR("trainLabels_clean.csv", "/workspace/train")
+
 counts=df['level'].value_counts().sort_index()
 #this returns a series object
 total=counts.sum()
@@ -70,7 +72,7 @@ to fix that, we use stratified split
 """
 #this is for running on the original dataset
 # Point directly to your full dataset and its original labels
-dataset = DR("trainLabels_clean.csv", "/workspace/train")
+
 
 # Extract labels instantly from the pandas dataframe instead of loading images!
 labels = df['level'].tolist()
