@@ -25,6 +25,11 @@ placed under the variable model from model.py
 """
 
 df=pd.read_csv("trainLabels.csv")
+
+# Drop rows for images that aren't physically present inside your train directory
+existing_images = set([f.removesuffix(".jpeg") for f in os.listdir("/workspace/train")])
+df = df[df["image"].isin(existing_images)].reset_index(drop=True)
+
 counts=df['level'].value_counts().sort_index()
 #this returns a series object
 total=counts.sum()
