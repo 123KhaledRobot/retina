@@ -30,6 +30,8 @@ df=pd.read_csv("trainLabels.csv")
 existing_images = set([f.removesuffix(".jpeg") for f in os.listdir("/workspace/train")])
 df = df[df["image"].isin(existing_images)].reset_index(drop=True)
 
+df.to_csv("trainLabels_clean.csv", index=False)
+
 counts=df['level'].value_counts().sort_index()
 #this returns a series object
 total=counts.sum()
@@ -68,12 +70,11 @@ to fix that, we use stratified split
 """
 #this is for running on the original dataset
 # Point directly to your full dataset and its original labels
-dataset = DR("trainLabels.csv", "/workspace/train")
+dataset = DR("trainLabels_clean.csv", "/workspace/train")
 
 # Extract labels instantly from the pandas dataframe instead of loading images!
-labels = dataset.df['level'].tolist()
-
-indices = list(range(len(dataset)))
+labels = df['level'].tolist()
+indices = list(range(len(df)))
 
 trainval_idx, test_idx = train_test_split(
     indices, test_size=0.3, stratify=labels, random_state=42
