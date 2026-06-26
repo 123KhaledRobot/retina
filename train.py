@@ -19,6 +19,12 @@ from torch.utils.data import Subset
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
+def set_bn_eval(module):
+    if isinstance(module, torch.nn.BatchNorm2d):
+        module.eval()
+
+model.apply(set_bn_eval)
+
 """
 this means that we are importing ResNet50 which we have
 placed under the variable model from model.py
@@ -78,10 +84,10 @@ to fix that, we use stratified split
 labels = df['level'].tolist()
 indices = list(range(len(df)))
 
-sample_files = os.listdir("/workspace/train")[:5]
-print("Sample files in train dir:", sample_files)
-print("Sample df['image'] values:", df['image'].head().tolist())
-print("Total files found:", len(os.listdir("/workspace/train")))
+# sample_files = os.listdir("/workspace/train")[:5]
+# print("Sample files in train dir:", sample_files)
+# print("Sample df['image'] values:", df['image'].head().tolist())
+# print("Total files found:", len(os.listdir("/workspace/train")))
 
 trainval_idx, test_idx = train_test_split(
     indices, test_size=0.3, stratify=labels, random_state=42
@@ -117,9 +123,13 @@ for epoch in range(num_epochs):
 
   #training mode
   model.train()
+  model.apply(set_bn_eval)
   total_loss=0;
   
   for batch_idx,(images,labels) in enumerate(dataloader):
+    
+    if batch_idx % 10 == 0:
+       print(f"  batch {batch_idx}/{len(dataloader)}", flush=True)
 
     images, labels = images.to(device), labels.to(device)
     optimizer.zero_grad()
