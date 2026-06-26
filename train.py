@@ -65,7 +65,9 @@ to fix that, we use stratified split
 # Point directly to your full dataset and its original labels
 dataset = DR("trainLabels.csv", "/workspace/train")
 
-labels=[dataset[i][1] for i in range(len(dataset))]
+# Extract labels instantly from the pandas dataframe instead of loading images!
+labels = dataset.df['level'].tolist()
+
 indices = list(range(len(dataset)))
 
 trainval_idx, test_idx = train_test_split(
