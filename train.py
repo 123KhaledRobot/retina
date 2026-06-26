@@ -78,6 +78,11 @@ to fix that, we use stratified split
 labels = df['level'].tolist()
 indices = list(range(len(df)))
 
+sample_files = os.listdir("/workspace/train")[:5]
+print("Sample files in train dir:", sample_files)
+print("Sample df['image'] values:", df['image'].head().tolist())
+print("Total files found:", len(os.listdir("/workspace/train")))
+
 trainval_idx, test_idx = train_test_split(
     indices, test_size=0.3, stratify=labels, random_state=42
 )
