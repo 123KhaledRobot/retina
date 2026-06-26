@@ -27,12 +27,12 @@ placed under the variable model from model.py
 df=pd.read_csv("trainLabels.csv")
 
 # Drop rows for images that aren't physically present inside your train directory
-existing_images = set([f.removesuffix(".jpeg") for f in os.listdir("/workspace/train")])
+existing_images = set([f.removesuffix(".jpeg") for f in os.listdir("/workspace/train/train")])
 df = df[df["image"].isin(existing_images)].reset_index(drop=True)
 
 df.to_csv("trainLabels_clean.csv", index=False)
 
-dataset = DR("trainLabels_clean.csv", "/workspace/train")
+dataset = DR("trainLabels_clean.csv", "/workspace/train/train")
 
 counts=df['level'].value_counts().sort_index()
 #this returns a series object
