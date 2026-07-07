@@ -2,6 +2,9 @@ import torch
 import pandas as pd
 from torch.utils.data import DataLoader,random_split
 
+from torch.utils.data import WeightedRandomSampler
+import numpy as np
+
 from dataset import DR
 from model import model 
 
@@ -38,18 +41,20 @@ df = df[df["image"].isin(existing_images)].reset_index(drop=True)
 
 df.to_csv("trainLabels_clean.csv", index=False)
 
-dataset = DR("trainLabels_clean.csv", "/workspace/train/train")
+# dataset = DR("trainLabels_clean.csv", "/workspace/train/train")
 
 counts=df['level'].value_counts().sort_index()
 #this returns a series object
 total=counts.sum()
 
-class_weights=[total/(len(counts)*i) for i in counts]
-class_weights=torch.tensor(class_weights,dtype=torch.float32)
+# class_weights=[total/(len(counts)*i) for i in counts]
+# class_weights=torch.tensor(class_weights,dtype=torch.float32)
 
-class_weights = class_weights.to(device) # Don't forget to push your loss weights too!
+# class_weights = class_weights.to(device) # Don't forget to push your loss weights too!
 
-criterion=torch.nn.CrossEntropyLoss(weight=class_weights)
+#weight=class_weights ... removed for now
+
+criterion=torch.nn.CrossEntropyLoss()
 
 optimizer=torch.optim.Adam(model.fc.parameters(),lr=1e-3)
 
@@ -93,7 +98,9 @@ trainval_idx, test_idx = train_test_split(
     indices, test_size=0.3, stratify=labels, random_state=42
 )
 #this splits train+crossval and testing into 7:3 ratio
-#since we wanted 30% testing data
+#since we wanted 30% testing data'
+train_dataset_base = DR("trainLabels_clean.csv", "/workspace/train/train", augment=True)
+eval_dataset_base  = DR("trainLabels_clean.csv", "/workspace/train/train", augment=False)
 
 train_idx, val_idx = train_test_split(
     trainval_idx, test_size=0.142857, stratify=[labels[i] for i in trainval_idx], random_state=42
@@ -101,12 +108,16 @@ train_idx, val_idx = train_test_split(
 
 #then we do the same approximately to make it 6:1 ratio
 
-train_dataset=Subset(dataset,train_idx)
-val_dataset=Subset(dataset,val_idx)
-test_dataset=Subset(dataset,test_idx)
+train_dataset = Subset(train_dataset_base, train_idx)
+val_dataset   = Subset(eval_dataset_base, val_idx)
+test_dataset  = Subset(eval_dataset_base, test_idx)
 
-# Leverage the multi-core Xeon CPU and fast NVMe drive on your instance
-dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=4, pin_memory=True)
+train_labels = [labels[i] for i in train_idx]
+class_counts = np.bincount(train_labels, minlength=5)
+sample_w = [1.0 / class_counts[l] for l in train_labels]
+sampler = WeightedRandomSampler(sample_w, num_samples=len(sample_w), replacement=True)
+
+dataloader = DataLoader(train_dataset, batch_size=64, sampler=sampler, num_workers=4, pin_memory=True)
 val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
 

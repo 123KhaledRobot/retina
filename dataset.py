@@ -7,12 +7,27 @@ from PIL import Image
 from preprocessing import pipeline
 
 import os
+import random
+import cv2
+
+def spatial_augment(img_array):
+    if random.random() < 0.5:
+        img_array = np.fliplr(img_array).copy()
+    if random.random() < 0.5:
+        img_array = np.flipud(img_array).copy()
+    angle = random.uniform(-20, 20)
+    h, w = img_array.shape[:2]
+    M = cv2.getRotationMatrix2D((w / 2, h / 2), angle, 1.0)
+    img_array = cv2.warpAffine(img_array, M, (w, h), borderMode=cv2.BORDER_REFLECT)
+    return img_array
+
 
 class DR(Dataset):
-  def __init__(self, csv_file, img_dir, cache_dir="cache"):
+  def __init__(self, csv_file, img_dir, cache_dir="cache",augment=False):
     self.df = pd.read_csv(csv_file)
     self.img_dir = img_dir
     self.cache_dir = cache_dir
+    self.augment=augment
     os.makedirs(cache_dir, exist_ok=True)
 
   def __len__(self):
@@ -31,6 +46,8 @@ class DR(Dataset):
         processed_img = pipeline(img)
         np.save(cache_path, processed_img)
 
+    if self.augment:
+      processed_img = spatial_augment(processed_img)
     processed_img = np.transpose(processed_img, (2, 0, 1))
     img_tensor = torch.from_numpy(processed_img).float() / 255.0
 
