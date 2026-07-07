@@ -56,7 +56,15 @@ total=counts.sum()
 
 criterion=torch.nn.CrossEntropyLoss()
 
-optimizer=torch.optim.Adam(model.fc.parameters(),lr=1e-3)
+# optimizer=torch.optim.Adam(model.fc.parameters(),lr=1e-3) 
+"""
+updated because of poor performance. 
+"""
+
+optimizer = torch.optim.Adam([
+    {"params": model.layer4.parameters(), "lr": 1e-5},
+    {"params": model.fc.parameters(), "lr": 1e-3},
+])
 
 # valid_images=set(df["image"]) #convert to set for O(1) lookup
 
