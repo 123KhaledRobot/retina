@@ -138,6 +138,13 @@ what does .train do ?
 
 below is training and cv part
 """
+
+
+best_qwk = -1
+patience = 5  # Stop training if val QWK doesn't improve for 5 straight epochs
+epochs_no_improve = 0
+best_model_path = "retina_best.pth"
+
 for epoch in range(num_epochs):
 
   #training mode
@@ -172,6 +179,9 @@ for epoch in range(num_epochs):
   model.eval()
   totalval_loss=0;
 
+  val_preds = []
+  val_labels = []
+
   with torch.no_grad():
     for batch_idx,(images,labels) in enumerate(val_loader):
 
@@ -181,6 +191,30 @@ for epoch in range(num_epochs):
       loss_value=criterion(predicted_labels,labels)
 
       totalval_loss+=loss_value.item()
+
+      # Collect predictions for QWK calculation
+      preds = torch.argmax(predicted_labels, dim=1)
+      val_preds.extend(preds.tolist())
+      val_labels.extend(labels.tolist())
+
+      # Calculate Validation QWK globally over the entire validation set
+  val_qwk = cohen_kappa_score(val_labels, val_preds, weights='quadratic')
+  print(f"CV: epoch no.{epoch}: avg_loss ={(totalval_loss/len(val_loader)):.4f} | val_QWK = {val_qwk:.4f}")
+
+  # Checkpoint tracking & Early Stopping Logic
+  if val_qwk > best_qwk:
+      best_qwk = val_qwk
+      torch.save(model.state_dict(), best_model_path)
+      print(f"  -> New best validation QWK achieved ({val_qwk:.4f}). Checkpoint saved.")
+      epochs_no_improve = 0
+  else:
+      epochs_no_improve += 1
+      print(f"  -> No improvement in val_QWK for {epochs_no_improve} epoch(s).")
+
+  # Trigger Early Stopping
+  if epochs_no_improve >= patience:
+      print(f"\nEarly stopping triggered! Training stopped at epoch {epoch}.")
+      break
     
   print(f"CV: epoch no.{epoch}: avg_loss ={(totalval_loss/len(val_loader)):.4f}")
 
@@ -190,6 +224,14 @@ for epoch in range(num_epochs):
 """
 testing part
 """
+
+# Load the absolute best weights discovered during validation before testing
+if os.path.exists(best_model_path):
+    print(f"\nLoading best model checkpoint ({best_model_path}) for final testing...")
+    model.load_state_dict(torch.load(best_model_path))
+else:
+    print("\nWarning: Best checkpoint file not found. Running test on current weights.")
+
 
 model.eval()
 
