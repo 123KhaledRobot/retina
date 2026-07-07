@@ -47,14 +47,14 @@ counts=df['level'].value_counts().sort_index()
 #this returns a series object
 total=counts.sum()
 
-# class_weights=[total/(len(counts)*i) for i in counts]
-# class_weights=torch.tensor(class_weights,dtype=torch.float32)
+class_weights=[total/(len(counts)*i) for i in counts]
+class_weights=torch.tensor(class_weights,dtype=torch.float32)
 
-# class_weights = class_weights.to(device) # Don't forget to push your loss weights too!
+class_weights = class_weights.to(device) # Don't forget to push your loss weights too!
 
-#weight=class_weights ... removed for now
+weight=class_weights #... removed for now
 
-criterion=torch.nn.CrossEntropyLoss()
+criterion=torch.nn.CrossEntropyLoss(weight=class_weights)
 
 # optimizer=torch.optim.Adam(model.fc.parameters(),lr=1e-3) 
 """
